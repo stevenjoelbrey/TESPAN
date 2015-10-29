@@ -23,10 +23,15 @@ for(file in files){
   
   List <-  readMat(paste0("TESData/",file))
 
-  hour <-  append(hour, as.numeric(List[["westNA.ut.hr"]]))
-  dates <- append(dates, as.numeric(List[["westNA.date"]]))
-  lon   <- append(lon, as.numeric(List[["westNA.lons"]]))
-  lat   <- append(lat, as.numeric(List[["westNA.lats"]]))
+#   hour <-  append(hour, as.numeric(List[["westNA.ut.hr"]]))
+#   dates <- append(dates, as.numeric(List[["westNA.date"]]))
+#   lon   <- append(lon, as.numeric(List[["westNA.lons"]]))
+#   lat   <- append(lat, as.numeric(List[["westNA.lats"]]))
+
+  hour <-  append(hour, as.numeric(List[["usa.ut.hr"]]))
+  dates <- append(dates, as.numeric(List[["usa.date"]]))
+  lon   <- append(lon, as.numeric(List[["usa.lons"]]))
+  lat   <- append(lat, as.numeric(List[["usa.lats"]]))
 
 }
 

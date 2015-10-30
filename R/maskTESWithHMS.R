@@ -126,6 +126,8 @@ for (i in 1:Nretrievals){
     
   } # End of if statement checking for GIS data completeness
   
+  print(paste("progress =", round(i/Nretrievals*100,2),"%"))
+  
 } # End of looping through TES datapoints
 
 

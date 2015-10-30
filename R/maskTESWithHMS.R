@@ -74,7 +74,7 @@ inSmoke <- rep(NA, Nretrievals)
 ################################################################################
 # loop through TES retrievals, checking each for intersection with a smoke plume
 ################################################################################
-HMSDataDir <- "HMSData/"
+HMSDataDir <- "/Users/sbrey/projects/PM25Ozone/FireData/HMS_smoke/"
 for (i in 1:Nretrievals){
   
   location <- locations[i]

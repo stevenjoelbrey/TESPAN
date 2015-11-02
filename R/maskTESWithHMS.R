@@ -11,6 +11,8 @@ library(stringr)
 library(R.utils)
 
 
+# TODO: There are retreivals for 2006, the data has May - Sep. 
+
 ##############################################################################
 # Handle TES data, make into useful arrays
 ##############################################################################
@@ -48,7 +50,7 @@ TESTime <- as.POSIXct(dateString, format="%Y%m%d", tz="UTC")
 # Location the HMS GIS smoke files in project 
 smokeFiles <- list.files("/Users/sbrey/projects/PM25Ozone/FireData/HMS_smoke/")
 
-# For TESPAN we only care about July
+# For TESPAN we only care about July, for inter annual variability
 minMonth <- 7
 maxMonth <- 7
   
@@ -144,50 +146,7 @@ df <- data.frame(date=dates,
 write.csv(df, file="DataOut/TES_SmokeSumarry.csv", row.names=FALSE)
 
 
-################################################################################
-# Plot the retrievals and colorcode them based on if they are in smoke 
-################################################################################
-df <- read.csv(file="DataOut/TES_SmokeSumarry.csv", stringsAsFactors=FALSE)
 
-dates <- df$date
-yearsString <- str_sub(dates, 1,4)
-uniqueYears <- unique(yearsString)
-
-for(year in uniqueYears){
-  
-  yearMask <- year == yearsString
-  
-  df_subset <- df[yearMask,]
-  
-  # Color based on in smoke | not | or not available
-  col <- rep("black", dim(df_subset)[1])
-  
-  col[which(df_subset$inSmoke == TRUE)]  <- "red"
-  col[which(df_subset$inSmoke == FALSE)] <- "lightblue"
-  
-  
-  fileName <- paste0("figures/TESHMSOverlay_",year,".pdf")
-  pdf(file=fileName, width=10, height=7)
-  
-  par( mar=c(0,0,1,4)  )
-  
-  map(database = "world", ylim = c(20,70), xlim = c(-185,-85))
-  points(df_subset$Longitude, df_subset$Latitude, col=col, pch=19)
-  
-  
-  legend("bottomleft",
-         xpd=TRUE,
-         inset=c(0,0.4),
-         legend=c("In Smoke","Not in Smoke", "No data"),
-         col=c("red", "lightblue", "black"),
-         pch=19,
-         cex=1.5)
-  
-  title(year)
-  
-  dev.off()
-  
-}
 
 
 

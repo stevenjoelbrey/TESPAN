@@ -1,6 +1,11 @@
 # maskTESWithHMS.R
 
+# This script is designed to figure out when a smoke plume polygon is 
+# overlapping a TES retrieval. Further, we want to know if the tes retrieval
+# is overlapping a high, low, or mid level anthropogenic emissions NOX grid
+# Box. 
 
+# Load the required libraries
 library(R.matlab)
 library(maps)
 library(stringr)
@@ -10,8 +15,8 @@ library(rgeos)
 library(stringr)
 library(R.utils)
 
+test <- FALSE
 
-# TODO: There are retreivals for 2006, the data has May - Sep. 
 
 ##############################################################################
 # Handle TES data, make into useful arrays
@@ -24,11 +29,6 @@ lat  <- numeric(0)
 for(file in files){
   
   List <-  readMat(paste0("TESData/",file))
-
-#   hour <-  append(hour, as.numeric(List[["westNA.ut.hr"]]))
-#   dates <- append(dates, as.numeric(List[["westNA.date"]]))
-#   lon   <- append(lon, as.numeric(List[["westNA.lons"]]))
-#   lat   <- append(lat, as.numeric(List[["westNA.lats"]]))
 
   hour <-  append(hour, as.numeric(List[["usa.ut.hr"]]))
   dates <- append(dates, as.numeric(List[["usa.date"]]))
@@ -44,45 +44,58 @@ TESTime <- as.POSIXct(dateString, format="%Y%m%d", tz="UTC")
 
 
 ##############################################################################
-# Handle HMS data 
+# Handle HMS data (NOT USED)
 ##############################################################################
   
 # Location the HMS GIS smoke files in project 
 smokeFiles <- list.files("/Users/sbrey/projects/PM25Ozone/FireData/HMS_smoke/")
 
-# For TESPAN we only care about July, for inter annual variability
-minMonth <- 7
-maxMonth <- 7
-  
+
 # Only look at days that we have smoke data for. Determined by preference and
 # HMS dataset 
 smokeDayString <- unique(str_sub(smokeFiles,5,12))
 smokeTime <- as.POSIXct(smokeDayString, format="%Y%m%d", tz="UTC")
+# NOTE: smokeTime has been plotted and visually inspected for missing time 
+# NOTE: periods. There are no significant gaps (missing data) in the time 
+# NOTE: series loaded in my PMOzone/FireData directory
   
 ##############################################################################
-# Create spatial points dataframe of hybrid monitor locations
+# Handle NOX Spatial data 
+##############################################################################
+load("EPAData/NEI_2008_wkdayNOX_spdf.RData")
+NOXValues <- NOX$value
+maxNOX    <- max(NOXValues, na.rm=TRUE)
+NOXPercentOfMax <- NOXValues / maxNOX * 100 # to make the number a %
+
+##############################################################################
+# Create spatial points dataframe of TES retrieval locations 
 ##############################################################################
 coords    <- cbind(lon, lat)
 locations <- SpatialPoints(coords, proj4string=CRS(as.character(NA)))
 
 
 ##############################################################################
-# Create array to store information on if TES is in smoke or not 
+# Create array to store information on if TES is in smoke or not
+# and an array that tells us what percentile of NOX emissions it is in
 ############################################################################## 
-Nretrievals <- length(locations)
-inSmoke <- rep(NA, Nretrievals)
+Nretrievals     <- length(locations)
+inSmoke         <- rep(NA, Nretrievals)
 
+NOXEmission     <- rep(NA, Nretrievals)
+NOXPercentOfMaxStored <- rep(NA, Nretrievals)
 
 ################################################################################
 # loop through TES retrievals, checking each for intersection with a smoke plume
 ################################################################################
 HMSDataDir <- "/Users/sbrey/projects/PM25Ozone/FireData/HMS_smoke/"
-for (i in 1:Nretrievals){
+for (i in 1:Nretrievals){ #Nretrievals
   
+  # Working with a new retrieval (aka location) everytime we step through this 
+  # loop 
   location <- locations[i]
   
   # Build the link to the correct daily HMS file 
-  t <- as.POSIXlt(TESTime[i])
+  t <- as.POSIXlt(TESTime[i], tz="UTC")
   year <- t$year + 1900
   mon <- t$mon+1;if(str_length(mon) < 2){mon <- paste0("0",mon)}
   day <- t$mday; if(str_length(day) < 2){day <- paste0("0",day)}
@@ -90,12 +103,14 @@ for (i in 1:Nretrievals){
   # Load the GIS smoke data
   layername <- paste0("hms_",year, mon, day)
   print(paste(i, "Layername:", layername))
+  
+  # See if the HMS GIS file exists for this day
   try_error <- try(
     GIS <- readOGR(dsn=HMSDataDir, layer=layername, verbose=FALSE)
     , silent = FALSE
   )
   
-  # If the GIS data exists carry on
+  # If the GIS data exists carry on with smoke analysis
   if(!class(try_error) == "try-error"){
     
     # Is this retrieval even in the boudning box? If not, call it NA
@@ -115,23 +130,98 @@ for (i in 1:Nretrievals){
     # If there is a chance that the retrieval overlaps, check to see if it
     # overlaps with a specific smoke polygon
     if(inBoundingBox){
+      
       # What stations overlap with smoke? 
       index <- over(location, GIS)[,1] # We want where it is NOT NA
-      HMSmask  <- !(is.na(index))
+      HMSmask  <- !(is.na(index)) # if index is NA, says false, aka not in smoke
       
       # Co-located with smoke?
       inSmoke[i] <- HMSmask
-    }
+      
+    } 
     
     # NOTE: If there is no HMS data available | the bounding box does not cover
     # NOTE: the retrieval, this will be NA by defualt. 
+    # NOTE: insmoke == FALSE corresponds to scope of HMS covers TES location
+    # NOTE: but that location is not in smoke
     
   } # End of if statement checking for GIS data completeness
+  
+  ################################################################################
+  # Now check to see if TES retrieval is overlapping NEI. Report % of max
+  # NEI value for wkday july 2008 this retrieval is over 
+  ################################################################################
+  
+  # Find out if location inside bounding box of NOX GIS object 
+  bbox   <- NOX@bbox
+  minLat <- bbox[2,1]
+  maxLat <- bbox[2,2]
+  minLon <- bbox[1,1]
+  maxLon <- bbox[1,2]
+  noxLat   <- location$lat
+  noxLon   <- location$lon
+  
+  # Place a check for errors 
+  if(!noxLat == pLat){
+    stop("noLat should be equal to pLat, there is an error")
+  }
+  
+  inLatRange <- minLat <= noxLat & maxLat >= noxLat
+  inLonRange <- minLon <= noxLon & maxLon >= noxLon
+  
+  inBoundingNOXBox <- inLatRange & inLonRange
+  
+  # if in the bounding NOX box then this TES retrieval is assocaited with some
+  # NEI NOX value
+  if(inBoundingNOXBox){
+    
+    NOXList <- over(location, NOX, returnList=TRUE)
+    NOXdf   <- NOXList[[1]] # NOTE: Should only ever overlap one NOX box
+    PolyID  <- row.names(NOXdf)
+    rowNumber <- as.numeric(str_replace(PolyID, "s", "")) # "s" removed _. numeric 
+    
+    # Store the information of the selected NOX box
+    NOXEmission[i] <- NOXValues[rowNumber]
+    NOXPercentOfMaxStored[i] <- NOXPercentOfMax[rowNumber]
+    
+  }
+  ################################################################################
+  # Audit figure! TEST THIS CODE VISUALLY. Make sure results do what you exspect 
+  ################################################################################
+  # if(test){
+  if(i <= 300){
+    
+    # Save a pdf figure of the results for the test simulations
+    pdf(file=paste0("testFigures/",i,".pdf"),
+        width=7, height=7)
+    
+    # Plot the base of the map
+    map("world", xlim=c(-180,-50), ylim=c(0,80))
+   
+    # plot the smoke if it exists for this date
+    if(!class(try_error) == "try-error"){plot(GIS, add=TRUE, col="red")}
+    # Always plot the NOX grid boxes
+    plot(NOX, add=TRUE)
+    # Shade the NOX box that the retrieval is inside of 
+    if(inBoundingNOXBox){plot(NOX[rowNumber,], col="green", add=TRUE)}
+    # Plot the retrical location
+    plot(location, add=TRUE, col="blue", lwd=2)
+    
+    # Add titles and labels for debugging purposes
+    title(paste("NOX % of max is:",NOXPercentOfMaxStored[i]))
+    title(line=0, paste("inSmoke =", inSmoke[i]))
+    title(sub = layername)
+    title(sub=paste(noxLat,noxLon,hour[i]), line=0)
+    title(sub=paste(lat[i],noxLon[i]), line=1)
+    # turn off and save the current plot 
+    dev.off()
+    
+  } # End of testing block 
+  ################################################################################
   
   print(paste("progress =", round(i/Nretrievals*100,2),"%"))
   
 } # End of looping through TES datapoints
-
 
 
 ################################################################################
@@ -141,9 +231,12 @@ df <- data.frame(date=dates,
                 hour=hour, 
                 Longitude=lon, 
                 Latitude=lat, 
-                inSmoke=inSmoke)
+                inSmoke=inSmoke,
+                NOXEmission=NOXEmission,
+                NOXPercentOfMax=NOXPercentOfMaxStored,
+                maxNOX=rep(maxNOX, Nretrievals))
 
-write.csv(df, file="DataOut/TES_SmokeSumarry.csv", row.names=FALSE)
+write.csv(df, file="DataOut/TES_SmokeSumarry_wNOX.csv", row.names=FALSE)
 
 
 

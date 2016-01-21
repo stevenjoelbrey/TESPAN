@@ -26,6 +26,9 @@ hour <- numeric(0)
 dates<- numeric(0)
 lon  <- numeric(0)
 lat  <- numeric(0)
+
+# TODO: To make code run faster I could see if the date changes and leave GIS
+# TODO: Object open, and change only if the date changes. 
 for(file in files){
   
   List <-  readMat(paste0("TESData/",file))
@@ -84,6 +87,8 @@ inSmoke         <- rep(NA, Nretrievals)
 NOXEmission     <- rep(NA, Nretrievals)
 NOXPercentOfMaxStored <- rep(NA, Nretrievals)
 
+GISExists       <- rep(NA, Nretrievals)
+
 ################################################################################
 # loop through TES retrievals, checking each for intersection with a smoke plume
 ################################################################################
@@ -111,7 +116,10 @@ for (i in 1:Nretrievals){ #Nretrievals
   )
   
   # If the GIS data exists carry on with smoke analysis
-  if(!class(try_error) == "try-error"){
+  GISExist <- !class(try_error) == "try-error"
+  if(GISExist){
+    
+    GISExists[i] <- TRUE
     
     # Is this retrieval even in the boudning box? If not, call it NA
     bbox   <- GIS@bbox
@@ -145,6 +153,11 @@ for (i in 1:Nretrievals){ #Nretrievals
     # NOTE: insmoke == FALSE corresponds to scope of HMS covers TES location
     # NOTE: but that location is not in smoke
     
+  } else {
+    
+    # There is no GIS data for this date
+    GISExists[i] <- FALSE
+    
   } # End of if statement checking for GIS data completeness
   
   ################################################################################
@@ -161,8 +174,8 @@ for (i in 1:Nretrievals){ #Nretrievals
   noxLat   <- location$lat
   noxLon   <- location$lon
   
-  # Place a check for errors 
-  if(!noxLat == pLat){
+  # Place a check for errors. pLat only defined when there is GIS data 
+  if(!noxLat == pLat & GISExist){
     stop("noLat should be equal to pLat, there is an error")
   }
   
@@ -232,6 +245,7 @@ df <- data.frame(date=dates,
                 Longitude=lon, 
                 Latitude=lat, 
                 inSmoke=inSmoke,
+                GISExists=GISExists,
                 NOXEmission=NOXEmission,
                 NOXPercentOfMax=NOXPercentOfMaxStored,
                 maxNOX=rep(maxNOX, Nretrievals))

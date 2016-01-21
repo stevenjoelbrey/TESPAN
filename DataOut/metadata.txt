@@ -1,0 +1,26 @@
+README
+
+maskTESWithHMS.R OUTPUT description
+
+################################################################
+Variable : Description 
+################################################################
+date : YYYYMMDD of the TES retrieval
+hour : hour assocaited with TES retrieval
+Longitude : of TES
+Latitude : of TES
+inSmoke : Is this given TES retreival in smoke? Aka does a HMS 
+          polygon overlap the retreival lat lon? IF yes, yes. If
+					FALSE, no. If NA the bounding box of TES for that day 
+					does not include the tes lat lon. eg. if tes retreival 
+					was in Alaska and HMS data only covered Washington + 
+					Idaho. 
+GISExists: Does HMS data exist for this date? TRUE==yes, FALSE==no. 
+NOXEmission: The emission of the July 2008 weekday NEI data 1x1 degree
+						 grid box that the tes retrieval falls inside. 
+						 Lon range for NEI used: -126:60. Lat range used: 15:51 
+						 (contiguious United States).
+NOPercentOfMax: This is the retrieval NEI nox value divided by the max
+                value in the domain. Max of 1. 
+maxNOX: This is the value of the maximum NEI emission grid box in the 
+        used NEI domain. 

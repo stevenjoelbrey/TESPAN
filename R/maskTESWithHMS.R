@@ -26,6 +26,7 @@ hour <- numeric(0)
 dates<- numeric(0)
 lon  <- numeric(0)
 lat  <- numeric(0)
+soundingID <- character(0)
 
 # TODO: To make code run faster I could see if the date changes and leave GIS
 # TODO: Object open, and change only if the date changes. 
@@ -37,7 +38,7 @@ for(file in files){
   dates <- append(dates, as.numeric(List[["usa.date"]]))
   lon   <- append(lon, as.numeric(List[["usa.lons"]]))
   lat   <- append(lat, as.numeric(List[["usa.lats"]]))
-
+  soundingID <- append(soundingID, List[["usa.soundingID"]]) # comes as character 
 }
 
 # The TES points have been read in, see which ones overlap with HMS
@@ -240,15 +241,16 @@ for (i in 1:Nretrievals){ #Nretrievals
 ################################################################################
 # Save the results nicely in a csv file 
 ################################################################################
-df <- data.frame(date=dates, 
-                hour=hour, 
-                Longitude=lon, 
-                Latitude=lat, 
-                inSmoke=inSmoke,
-                GISExists=GISExists,
-                NOXEmission=NOXEmission,
-                NOXPercentOfMax=NOXPercentOfMaxStored,
-                maxNOX=rep(maxNOX, Nretrievals))
+df <- data.frame(soundingID=soundingID,
+                 date=dates, 
+                 hour=hour, 
+                 Longitude=lon, 
+                 Latitude=lat, 
+                 inSmoke=inSmoke,
+                 GISExists=GISExists,
+                 NOXEmission=NOXEmission,
+                 NOXPercentOfMax=NOXPercentOfMaxStored,
+                 maxNOX=rep(maxNOX, Nretrievals))
 
 write.csv(df, file="DataOut/TES_SmokeSumarry_wNOX.csv", row.names=FALSE)
 

@@ -94,6 +94,8 @@ GISExists       <- rep(NA, Nretrievals)
 # loop through TES retrievals, checking each for intersection with a smoke plume
 ################################################################################
 HMSDataDir <- "/Users/sbrey/projects/PM25Ozone/FireData/HMS_smoke/"
+# NOTE: High latitude polygons are wierd sometimes. I forget the season or 
+# NOTE: reason but I saw it for smokeSource work a bit. 
 for (i in 1:Nretrievals){ #Nretrievals
   
   # Working with a new retrieval (aka location) everytime we step through this 

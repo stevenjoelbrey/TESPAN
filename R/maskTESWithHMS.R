@@ -212,7 +212,7 @@ for (i in 1:Nretrievals){ #Nretrievals
   # Audit figure! TEST THIS CODE VISUALLY. Make sure results do what you exspect 
   ################################################################################
   # if(test){
-  if(i >= 6000 | i <= 6500){
+  if(FALSE){
     
     # Save a pdf figure of the results for the test simulations
     pdf(file=paste0("testFigures/",i,".pdf"),
@@ -267,7 +267,7 @@ df <- data.frame(soundingID=soundingID,
                  maxNOX=rep(maxNOX, Nretrievals))
 
 # The file save name needs the date version and direcory. 
-writeFile <- paste0("DataOut/TES_SmokeSumarry_wNOX_",version,".csv")
+writeFile <- paste0("DataOut/TES_SmokeSumarry_wNOX_", version, ".csv")
 write.csv(df, file=writeFile, row.names=FALSE)
 
 

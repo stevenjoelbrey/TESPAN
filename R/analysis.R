@@ -1,10 +1,22 @@
 # analysis.R 
 
 #-------------------------------DESCRIPTION-----------------------------------#
-# This script reads in TES_SmokeSummary.csv data and plots the locations of 
-# retrivals for a desired time period. The retrievals are color coded by
-# whether they were taken on a day when a smoke plume was present or not 
-# present. 
+# This script reads in TES retrieval smoke summary data csv and plots the 
+# locations of retrivals for a desired time period. The retrievals are color 
+# coded by whether they were taken on a day when a smoke plume was present 
+# or not present. 
+
+# The data being used to make the plots in this figure were created using the
+# script R/maskTESWithHMS.R 
+
+version   <- "version_2"
+alpha     <- 0.6
+sym       <- 19
+pointSize <- 1.5
+
+# TODO: Getting rid of 2010. Make 4x4 with options for point sizes. 
+# TODO: Also send as individual. 
+# TODO: Use new smoke plumes. 
 
 library(R.matlab)
 library(maps)
@@ -18,22 +30,22 @@ library(R.utils)
 ################################################################################
 # Plot the retrievals and colorcode them based on if they are in smoke 
 ################################################################################
-df <- read.csv(file="DataOut/TES_SmokeSumarry.csv", stringsAsFactors=FALSE)
+dataFile <- paste0("DataOut/TES_SmokeSumarry_wNOX_", version, ".csv")
+df <- read.csv(file=dataFile, stringsAsFactors=FALSE)
 
 dates <- df$date
 yearsString <- str_sub(dates, 1,4)
 monthString <- str_sub(dates,5,6)
 uniqueYears <- unique(yearsString)
 
-
 # Set pdf parameters for multipanel figure
-fileName <- paste0("figures/TESHMSOverlay_2006-2010.pdf")
-pdf(file=fileName, width=15, height=10)
-par( mfrow=c(2,3), mai = c(0, 0, 0, 0), mar=c(2,1,1,1.5))
+fileName <- paste0("figures/", version, "/TESHMSOverlay_2006-2009.pdf")
+#pdf(file=fileName, width=10, height=10)
+#par( mfrow=c(3,2), mai = c(0, 0, 0, 0), mar=c(5,1,1,1.5))
 
 
 # Plot the July inter-annual variability 
-for(year in uniqueYears){
+for(year in 2006:2009){
   
   # Mask out all rows that occur in month "07" and loop year 
   timeMask <- year == yearsString & monthString == "07"
@@ -57,12 +69,22 @@ for(year in uniqueYears){
   
   # change color array based on in smoke or not. NA taken care of with black
   col[which(df_subset$inSmoke == TRUE)]  <- "red"
-  col[which(df_subset$inSmoke == FALSE)] <- "lightblue"
+  col[which(df_subset$inSmoke == FALSE)] <- "midnightblue" #"lightblue"
+  
+  fileName <- paste0("figures/", version, "/TESHMSOverlay_",year,"-","07",".pdf")
+  pdf(file=fileName, width=10, height=10)
+  par(mfrow=c(1,1), mai = c(0, 0, 0, 0), mar=c(1.5,1,1,1.5))
   
   # Draw this years map panel and color coded points 
   map(database = "world", ylim = c(30,71), xlim = c(-131,-59), 
       mar = c(1.5,1,1,2.5), myborder = 0.01, lwd=2)
-  points(df_subset$Longitude, df_subset$Latitude, col=col, pch=19)
+  
+  col <- adjustcolor(col, alpha.f = alpha)
+  
+  points(df_subset$Longitude, df_subset$Latitude, col=col, 
+         pch=sym,
+         lwd=2,
+         cex=pointSize)
   
   # Draw outlines of box one & 2 as merged polygon
   lineWidth <- 3
@@ -79,23 +101,43 @@ for(year in uniqueYears){
   
   
   # Add a basic title
-  title(paste("July",year), cex.main=3, line=1)
+  title(paste("July", year), cex.main=3, line=1)
+  
+  legendCol <- c("red", "midnightblue", "black")
+  
+  # Add a legend at the bottom 
+  legend(x = "bottom",
+         horiz=TRUE,
+         xpd=TRUE,
+         inset=c(0,-0.08),
+         legend=c("In Smoke","Not in Smoke", "No data"),
+         text.width=c(10, 12, 14),
+         col=adjustcolor(legendCol, alpha),
+         border=legendCol,
+         pch=sym,
+         cex=1.7,
+         pt.cex = 2.7,
+         bty="n")
+  
+  dev.off()
   
 }
-plot(0,xaxt='n',yaxt='n',bty='n',pch='',ylab='',xlab='')
 
-legend("center",
-       horiz=FALSE,
-       xpd=TRUE,
-       #inset=c(0,0.4),
-       legend=c("In Smoke","Not in Smoke", "No data"),
-       col=c("red", "lightblue", "black"),
-       pch=19,
-       cex=3.6,
-       bty="n")
+# Add a legend at the bottom 
+# plot(1, type = "n", axes=FALSE, xlab="", ylab="")
+# legend(x = "top",
+#        inset = 0,
+#        horiz=TRUE,
+#        xpd=TRUE,
+#        #inset=c(0,0.4),
+#        legend=c("In Smoke","Not in Smoke", "No data"),
+#        col=c("red", "midnightblue", "black"),
+#        pch=19,
+#        cex=1,
+#        bty="n")
 
 # Turn off multipanel plot 
-dev.off()
+#dev.off()
 
 ################################################################################
 # Make nice multipanel figure as specified by Emily. 
@@ -118,7 +160,7 @@ for(m in 5:9){
   col[which(df_subset$inSmoke == FALSE)] <- "lightblue"
   
   
-  fileName <- paste0("figures/TESHMSOverlay_",2006,"_",month,".pdf")
+  fileName <- paste0("figures/", version, "/TESHMSOverlay_",2006,"_",month,".pdf")
   pdf(file=fileName, width=10, height=7)
   
   par( mar=c(0,2,1,4)  )
@@ -134,7 +176,7 @@ for(m in 5:9){
          legend=c("In Smoke","Not in Smoke", "No data"),
          col=c("red", "lightblue", "black"),
          pch=19,
-         cex=1.3,
+         cex=1.4,
          bty="n")
   
   title(paste(month,2006, "TES retrievals"))

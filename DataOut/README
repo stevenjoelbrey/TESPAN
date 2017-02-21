@@ -1,0 +1,3 @@
+README
+
+See version_1 and version_2 related to /TESData versions. See raw retrieval metadata https://github.com/stevenjoelbrey/TESPAN/tree/master/TESData. See https://github.com/stevenjoelbrey/TESPAN/blob/master/R/maskTESWithHMS.R for details on how these overlaps are calcuated. 

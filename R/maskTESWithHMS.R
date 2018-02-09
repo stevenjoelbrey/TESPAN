@@ -20,7 +20,7 @@ library(R.utils)
 test <- FALSE
 
 # What version of TES data do we want to use? 
-version <- "version_2" # "version_1" | "version_2"
+version <- "version_1" # "version_1" | "version_2"
 
 ##############################################################################
 # Handle TES data, make into useful arrays
